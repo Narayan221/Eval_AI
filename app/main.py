@@ -6,9 +6,7 @@ import asyncio
 from .session_manager import AISessionManager
 from .webrtc_handler import WebRTCHandler
 from .analysis.video_scorer import SessionScorer
-from .analysis.description_generator import DescriptionGenerator
-from fastapi import UploadFile, File, Body
-from pydantic import BaseModel
+from fastapi import UploadFile, File
 
 app = FastAPI()
 
@@ -48,17 +46,7 @@ def get_scorer():
         scorer = SessionScorer()
     return scorer
 
-descriptor = None
 
-def get_descriptor():
-    global descriptor
-    if descriptor is None:
-        print("Initializing DescriptionGenerator (T5)...")
-        descriptor = DescriptionGenerator()
-    return descriptor
-
-class DescriptionRequest(BaseModel):
-    title: str
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -119,11 +107,7 @@ def get_scoring_formula():
     current_scorer = get_scorer()
     return current_scorer.get_formula_info()
 
-@app.post("/generate-description")
-async def generate_description(request: DescriptionRequest):
-    current_descriptor = get_descriptor()
-    description = current_descriptor.generate(request.title)
-    return {"description": description}
+
 
 
     import uvicorn
