@@ -8,11 +8,12 @@ let isAIMainView = true; // true = AI main, false = User main
 
 // WebSocket connection
 function connectWebSocket() {
-    ws = new WebSocket('ws://localhost:8080/ws');
-    
-    ws.onmessage = function(event) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    ws.onmessage = function (event) {
         const data = JSON.parse(event.data);
-        
+
         if (data.type === 'ai_response') {
             addMessage('AI', data.content, 'ai');
 
@@ -23,13 +24,13 @@ function connectWebSocket() {
             handleWebRTCAnswer(data.sdp);
         }
     };
-    
-    ws.onclose = function(event) {
+
+    ws.onclose = function (event) {
         addMessage('System', 'Backend disconnected. Session ended.', 'ai');
         endSession();
     };
-    
-    ws.onerror = function(error) {
+
+    ws.onerror = function (error) {
         addMessage('System', 'Connection error. Please restart the backend.', 'ai');
         endSession();
     };
@@ -39,28 +40,28 @@ function connectWebSocket() {
 function speakText(text) {
     // Stop any ongoing speech
     speechSynthesis.cancel();
-    
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.volume = 0.8;
-    
-    utterance.onstart = function() {
+
+    utterance.onstart = function () {
         updateVoiceStatus('🔊 AI Speaking...');
         animateAIAvatar(true);
     };
-    
-    utterance.onend = function() {
+
+    utterance.onend = function () {
         updateVoiceStatus('🎤 Always Listening (can interrupt)');
         animateAIAvatar(false);
     };
-    
-    utterance.onerror = function(event) {
+
+    utterance.onerror = function (event) {
         console.log('Speech synthesis error:', event.error);
         updateVoiceStatus('❌ Speech error');
         setTimeout(() => startListening(), 1000);
     };
-    
+
     speechSynthesis.speak(utterance);
 }
 
@@ -72,15 +73,15 @@ function initSpeechRecognition() {
         recognition.interimResults = true;
         recognition.lang = 'en-US';
         recognition.maxAlternatives = 1;
-        
-        recognition.onstart = function() {
+
+        recognition.onstart = function () {
             updateVoiceStatus('🎤 Listening...');
         };
-        
-        recognition.onresult = function(event) {
+
+        recognition.onresult = function (event) {
             let transcript = '';
             let interimTranscript = '';
-            
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     transcript += event.results[i][0].transcript;
@@ -88,7 +89,7 @@ function initSpeechRecognition() {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
-            
+
             transcript = transcript.trim();
             if (transcript.length > 0) {
                 // Stop AI if it's currently speaking (interruption)
@@ -96,11 +97,11 @@ function initSpeechRecognition() {
                     speechSynthesis.cancel();
                     updateVoiceStatus('🛑 Interrupted AI');
                 }
-                
+
                 updateVoiceStatus('Processing...');
                 addMessage('You', transcript, 'user');
 
-                
+
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({
                         type: 'voice_message',
@@ -111,11 +112,11 @@ function initSpeechRecognition() {
                 }
             }
         };
-        
-        recognition.onerror = function(event) {
+
+        recognition.onerror = function (event) {
             console.log('Speech recognition error:', event.error);
             updateVoiceStatus('❌ Error: ' + event.error);
-            
+
             // Auto-retry on certain errors
             if (event.error === 'no-speech' || event.error === 'audio-capture') {
                 setTimeout(() => {
@@ -125,11 +126,11 @@ function initSpeechRecognition() {
                 }, 2000);
             }
         };
-        
-        recognition.onend = function() {
+
+        recognition.onend = function () {
             isListening = false;
             updateVoiceStatus('🔄 Restarting...');
-            
+
             // Immediately restart for continuous listening
             setTimeout(() => {
                 if (document.getElementById('sessionActive').style.display !== 'none') {
@@ -157,7 +158,7 @@ function switchView() {
     const aiPipView = document.getElementById('aiPipView');
     const userPipView = document.getElementById('userPipView');
     const mainLabel = document.getElementById('mainLabel');
-    
+
     if (isAIMainView) {
         // Switch to User main view
         aiMainView.style.display = 'none';
@@ -165,12 +166,12 @@ function switchView() {
         aiPipView.style.display = 'flex';
         userPipView.style.display = 'none';
         mainLabel.textContent = 'You';
-        
+
         // Connect user video to main view
         if (localStream) {
             userMainView.srcObject = localStream;
         }
-        
+
         isAIMainView = false;
     } else {
         // Switch to AI main view
@@ -179,12 +180,12 @@ function switchView() {
         aiPipView.style.display = 'none';
         userPipView.style.display = 'block';
         mainLabel.textContent = 'AI Assistant';
-        
+
         // Connect user video to PIP view
         if (localStream) {
             userPipView.srcObject = localStream;
         }
-        
+
         isAIMainView = true;
     }
 }
@@ -193,7 +194,7 @@ function switchView() {
 function animateAIAvatar(speaking) {
     const avatar = document.querySelector('.ai-avatar');
     const pipAvatar = document.querySelector('.pip-ai-avatar');
-    
+
     if (avatar) {
         if (speaking) {
             avatar.classList.add('speaking');
@@ -201,7 +202,7 @@ function animateAIAvatar(speaking) {
             avatar.classList.remove('speaking');
         }
     }
-    
+
     if (pipAvatar) {
         if (speaking) {
             pipAvatar.style.animation = 'aiTalking 1.5s ease-in-out infinite';
@@ -217,18 +218,18 @@ function startListening() {
         updateVoiceStatus('❌ Voice not supported');
         return;
     }
-    
+
     if (isListening) {
         return; // Already listening
     }
-    
+
     try {
         recognition.start();
         isListening = true;
     } catch (error) {
         console.log('Recognition start error:', error);
         updateVoiceStatus('❌ Failed to start');
-        
+
         // Retry after delay
         setTimeout(() => {
             if (!isListening && !speechSynthesis.speaking) {
@@ -242,36 +243,39 @@ function startListening() {
 function startAISession() {
     const title = document.getElementById('sessionTitle').value.trim();
     const description = document.getElementById('sessionDescription').value.trim();
-    
+
     if (!title || !description) {
         alert('Please provide both title and description for the session.');
         return;
     }
-    
+
     // Hide setup, show session
     document.getElementById('sessionSetup').style.display = 'none';
     document.getElementById('sessionActive').style.display = 'block';
-    
+
     // Initialize components
     connectWebSocket();
     initSpeechRecognition();
     setupCamera();
-    
+
     // Auto-start voice recognition after WebSocket connects
     if (ws) {
-        ws.onopen = function() {
+        ws.onopen = function () {
             ws.send(JSON.stringify({
                 type: 'start_session',
                 title: title,
                 description: description
             }));
+
+            // Initiate WebRTC
+            initWebRTC();
         };
     }
-    
+
     // Auto-start listening only
     setTimeout(() => {
         addMessage('System', '🎤 Session started!', 'ai');
-        
+
         setTimeout(() => {
             startListening();
         }, 2000);
@@ -297,21 +301,21 @@ function stopVoiceRecognition() {
 function endSession() {
     console.log('Ending session...');
     addMessage('System', '🔄 Ending session...', 'ai');
-    
+
     // Force stop voice recognition
     stopVoiceRecognition();
-    
+
     // Stop speech synthesis
     if (speechSynthesis.speaking) {
         speechSynthesis.cancel();
     }
-    
+
     // Close WebSocket
     if (ws) {
         ws.close();
         ws = null;
     }
-    
+
     // Force stop all media tracks
     if (localStream) {
         console.log('Stopping media tracks...');
@@ -322,10 +326,10 @@ function endSession() {
         });
         localStream = null;
     }
-    
+
     // Additional cleanup - stop any remaining media
-    navigator.mediaDevices.getUserMedia({ audio: false, video: false }).catch(() => {});
-    
+    navigator.mediaDevices.getUserMedia({ audio: false, video: false }).catch(() => { });
+
     // Clear video elements
     const userPipView = document.getElementById('userPipView');
     const userMainView = document.getElementById('userMainView');
@@ -337,7 +341,7 @@ function endSession() {
         userMainView.srcObject = null;
         userMainView.load();
     }
-    
+
     // Reset UI
     setTimeout(() => {
         document.getElementById('sessionSetup').style.display = 'block';
@@ -345,17 +349,17 @@ function endSession() {
         document.getElementById('chatContainer').innerHTML = '';
         document.getElementById('sessionTitle').value = '';
         document.getElementById('sessionDescription').value = '';
-        
+
         // Reset view state
         isAIMainView = true;
-        
+
         // Reset video views
         const aiMainView = document.getElementById('aiMainView');
         const userMainView = document.getElementById('userMainView');
         const aiPipView = document.getElementById('aiPipView');
         const userPipView = document.getElementById('userPipView');
         const mainLabel = document.getElementById('mainLabel');
-        
+
         if (aiMainView) {
             aiMainView.style.display = 'flex';
             userMainView.style.display = 'none';
@@ -363,7 +367,7 @@ function endSession() {
             userPipView.style.display = 'block';
             mainLabel.textContent = 'AI Assistant';
         }
-        
+
         updateVoiceStatus('🔇 Session Ended');
         console.log('Session cleanup complete');
     }, 500);
@@ -373,7 +377,7 @@ function endSession() {
 function sendMessage() {
     const input = document.getElementById('messageInput');
     const message = input.value.trim();
-    
+
     if (message && ws) {
         addMessage('You', message, 'user');
         ws.send(JSON.stringify({
@@ -400,41 +404,86 @@ async function setupCamera() {
             video: { width: 1280, height: 720 },
             audio: true
         });
-        
+
         // Set video to PIP view initially (AI is main)
         document.getElementById('userPipView').srcObject = localStream;
-        
+
         console.log('Camera setup complete, stream tracks:', localStream.getTracks().length);
-        
+
     } catch (error) {
         console.error('Error accessing camera:', error);
         addMessage('System', 'Camera access denied. Voice chat will still work.', 'ai');
     }
 }
 
+async function initWebRTC() {
+    try {
+        console.log("Initializing WebRTC...");
+        const configuration = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
+        peerConnection = new RTCPeerConnection(configuration);
+
+        // Add local tracks to connection
+        if (localStream) {
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+        }
+
+        // Handle ICE candidates
+        peerConnection.onicecandidate = function (event) {
+            if (event.candidate) {
+                // In a real app, send candidate to server
+                // ws.send(JSON.stringify({type: 'ice_candidate', candidate: event.candidate}));
+            }
+        };
+
+        // Create Offer
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        // Send offer to server
+        if (ws) {
+            ws.send(JSON.stringify({
+                type: 'webrtc_offer',
+                sdp: offer.sdp
+            }));
+        }
+
+    } catch (e) {
+        console.error("WebRTC Init Error:", e);
+    }
+}
+
 async function handleWebRTCAnswer(sdp) {
     if (peerConnection) {
-        await peerConnection.setRemoteDescription({
-            type: 'answer',
-            sdp: sdp
-        });
+        try {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription({
+                type: 'answer',
+                sdp: sdp
+            }));
+            console.log("WebRTC Answer processed");
+        } catch (e) {
+            console.error("Error setting remote description:", e);
+        }
     }
 }
 
 // Enter key support
-document.getElementById('messageInput').addEventListener('keypress', function(e) {
+document.getElementById('messageInput').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         sendMessage();
     }
 });
 
 // Initialize
-window.onload = function() {
+window.onload = function () {
     // Show setup form on load
 };
 
 // Handle page refresh/close - cleanup media
-window.addEventListener('beforeunload', function(e) {
+window.addEventListener('beforeunload', function (e) {
     if (localStream) {
         localStream.getTracks().forEach(track => {
             track.stop();

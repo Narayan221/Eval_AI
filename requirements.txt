@@ -1,14 +1,24 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-websockets==12.0
-python-socketio==5.10.0
-python-multipart==0.0.6
-jinja2==3.1.2
-groq==0.4.1
-python-dotenv==1.0.0
+fastapi>=0.104.1
+uvicorn>=0.24.0
+python-multipart>=0.0.6
+websockets>=12.0
+python-socketio>=5.10.0
+jinja2>=3.1.2
+groq>=0.4.1
+httpx<0.28.0
+python-dotenv>=1.0.0
+# AI / ML
+ultralytics>=8.0.196
+opencv-python>=4.8.1.78
+numpy>=1.26.0
+ffmpeg-python>=0.2.0
+# Transcription
+faster-whisper>=0.10.0
+openai-whisper>=20231117
 transformers>=4.30.0
-torch>=1.13.0
 soundfile>=0.12.0
-numpy>=1.21.0
 speechbrain>=0.5.0
 datasets>=2.0.0
+# T5 Dependencies
+sentencepiece>=0.1.99
+accelerate>=0.21.0

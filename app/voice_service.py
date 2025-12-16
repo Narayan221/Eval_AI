@@ -1,53 +1,46 @@
 import asyncio
 import io
-from groq import AsyncGroq
 import os
 from dotenv import load_dotenv
 import torch
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 import soundfile as sf
 import numpy as np
+import whisper
 
 load_dotenv()
 
 class VoiceService:
     def __init__(self):
-        self.groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
-        # Skip SpeechT5 for now - use better TTS
-        print("Using system TTS with optimized settings...")
-        import pyttsx3
-        self.tts = pyttsx3.init()
-        self.tts_engine = "pyttsx3"
+        # Load local Whisper model
+        print("Loading Whisper model...")
+        self.whisper_model = whisper.load_model("base", device=self.device)
+        print(f"Whisper model loaded on {self.device}")
         
-        # Find the best male voice
-        voices = self.tts.getProperty('voices')
-        if voices:
-            # Look for specific good male voices
-            for voice in voices:
-                if any(name in voice.name.lower() for name in ['david', 'mark', 'male', 'george', 'james']):
-                    self.tts.setProperty('voice', voice.id)
-                    print(f"Using voice: {voice.name}")
-                    break
-            else:
-                # Use first available voice
-                self.tts.setProperty('voice', voices[0].id)
-                print(f"Using default voice: {voices[0].name}")
+        # Load SpeechT5 models
+        print("Loading SpeechT5 TTS models...")
+        self.processor = SpeechT5Processor.from_pretrained("models/speecht5_tts")
+        self.model = SpeechT5ForTextToSpeech.from_pretrained("models/speecht5_tts").to(self.device)
+        self.vocoder = SpeechT5HifiGan.from_pretrained("models/speecht5_hifigan").to(self.device)
         
-        # Optimize for more natural speech
-        self.tts.setProperty('rate', 140)    # Slower for clarity
-        self.tts.setProperty('volume', 0.9)  # Slightly louder
-        print("Voice service ready")
+        # Load speaker embeddings
+        from datasets import load_dataset
+        embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
+        self.speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0).to(self.device)
+        
+        print("SpeechT5 TTS ready")
     
     async def speech_to_text(self, audio_file_path: str) -> str:
-        """Convert speech to text using Groq Whisper"""
-        with open(audio_file_path, "rb") as file:
-            transcription = await self.groq_client.audio.transcriptions.create(
-                file=(audio_file_path, file.read()),
-                model="whisper-large-v3",
-            )
-        return transcription.text
+        """Convert speech to text using local Whisper"""
+        def transcribe():
+            result = self.whisper_model.transcribe(audio_file_path)
+            return result["text"]
+        
+        loop = asyncio.get_event_loop()
+        text = await loop.run_in_executor(None, transcribe)
+        return text.strip()
     
     def clean_text_for_speech(self, text: str) -> str:
         """Clean text for natural speech synthesis"""
@@ -77,20 +70,27 @@ class VoiceService:
         return text
     
     async def text_to_speech(self, text: str, output_path: str = "output.wav") -> str:
-        """Convert text to speech using SpeechT5 or fallback"""
-        # Clean text for better speech
+        """Convert text to speech using SpeechT5"""
         clean_text = self.clean_text_for_speech(text)
         
         def generate_speech():
             try:
-                # Use optimized pyttsx3
-                self.tts.save_to_file(clean_text, output_path)
-                self.tts.runAndWait()
+                inputs = self.processor(text=clean_text, return_tensors="pt").to(self.device)
+                
+                with torch.no_grad():
+                    speech = self.model.generate_speech(
+                        inputs["input_ids"], 
+                        self.speaker_embeddings, 
+                        vocoder=self.vocoder
+                    )
+                
+                # Convert to numpy and save
+                speech_np = speech.cpu().numpy()
+                sf.write(output_path, speech_np, samplerate=16000)
                     
             except Exception as e:
-                print(f"TTS generation failed: {e}")
+                print(f"SpeechT5 TTS generation failed: {e}")
         
-        # Run in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, generate_speech)
         

@@ -1,54 +1,67 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Live AI Session</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             color: #2c3e50;
             min-height: 100vh;
             overflow-x: hidden;
         }
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
             padding: 20px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
+
         .header {
             text-align: center;
             padding: 20px 20px 10px 20px;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
         }
+
         .header h1 {
             font-size: 1.5rem;
             font-weight: 700;
             color: #2c3e50;
             margin-bottom: 5px;
         }
+
         .header p {
             color: #7f8c8d;
             font-size: 0.85rem;
             font-weight: 400;
         }
+
         .session-setup {
-            background: rgba(255,255,255,0.9);
-            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
             border-radius: 20px;
             padding: 25px 20px;
             margin: 20px;
             backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
+
         .setup-form {
             margin-bottom: 15px;
         }
+
         .setup-form input {
             width: 100%;
             padding: 16px 20px;
@@ -60,6 +73,7 @@
             transition: all 0.3s ease;
             margin-bottom: 15px;
         }
+
         .setup-form textarea {
             width: 100%;
             padding: 16px 20px;
@@ -73,14 +87,19 @@
             min-height: 100px;
             font-family: inherit;
         }
-        .setup-form input:focus, .setup-form textarea:focus {
+
+        .setup-form input:focus,
+        .setup-form textarea:focus {
             outline: none;
             border-color: #3498db;
-            box-shadow: 0 0 10px rgba(52,152,219,0.2);
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
         }
-        .setup-form input::placeholder, .setup-form textarea::placeholder {
+
+        .setup-form input::placeholder,
+        .setup-form textarea::placeholder {
             color: #95a5a6;
         }
+
         .start-btn {
             width: 100%;
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
@@ -88,20 +107,23 @@
             font-size: 18px;
             font-weight: 700;
         }
+
         .session-layout {
             display: flex;
             height: 70vh;
             width: 100%;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
+
         .camera-section {
             width: 45%;
             display: flex;
             flex-direction: column;
             background: #f8f9fa;
         }
+
         .chat-section {
             width: 55%;
             display: flex;
@@ -109,7 +131,8 @@
             background: #fff;
             border-left: 1px solid #e1e8ed;
         }
-        .video-call-container { 
+
+        .video-call-container {
             position: relative;
             width: 100%;
             height: calc(70vh - 50px);
@@ -117,14 +140,17 @@
             overflow: hidden;
             transition: all 0.3s ease;
         }
+
         .video-call-container:hover {
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
+
         .main-video {
             width: 100%;
             height: 100%;
             position: relative;
         }
+
         .ai-main-view {
             width: 100%;
             height: 100%;
@@ -134,6 +160,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
         }
+
         .ai-main-view::before {
             content: '';
             position: absolute;
@@ -141,38 +168,56 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
         }
+
         .user-main-view {
             width: 100%;
             height: 100%;
             object-fit: cover;
             background: #000;
         }
-        .ai-avatar { 
-            width: 80px; 
-            height: 80px; 
-            border-radius: 50%; 
+
+        .ai-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 35px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
             color: white;
             border: 2px solid rgba(255, 255, 255, 0.3);
             transition: all 0.3s ease;
             backdrop-filter: blur(20px);
             z-index: 2;
         }
+
         .ai-avatar.speaking {
             animation: aiTalking 1.5s ease-in-out infinite;
         }
+
         @keyframes aiTalking {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            25% { transform: scale(1.05) rotate(-1deg); }
-            50% { transform: scale(1.1) rotate(0deg); }
-            75% { transform: scale(1.05) rotate(1deg); }
+
+            0%,
+            100% {
+                transform: scale(1) rotate(0deg);
+            }
+
+            25% {
+                transform: scale(1.05) rotate(-1deg);
+            }
+
+            50% {
+                transform: scale(1.1) rotate(0deg);
+            }
+
+            75% {
+                transform: scale(1.05) rotate(1deg);
+            }
         }
+
         .pip-video {
             position: absolute;
             top: 15px;
@@ -188,14 +233,17 @@
             z-index: 10;
             backdrop-filter: blur(10px);
         }
+
         .pip-video:hover {
             transform: scale(1.05);
             border-color: #3498db;
         }
+
         .pip-video:hover {
             transform: scale(1.05);
             border-color: #667eea;
         }
+
         .pip-ai-view {
             width: 100%;
             height: 100%;
@@ -204,6 +252,7 @@
             justify-content: center;
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
         }
+
         .pip-ai-avatar {
             width: 60px;
             height: 60px;
@@ -215,29 +264,32 @@
             font-size: 30px;
             color: white;
         }
+
         .pip-user-video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .video-label { 
-            position: absolute; 
-            top: 10px; 
-            left: 15px; 
+
+        .video-label {
+            position: absolute;
+            top: 10px;
+            left: 15px;
             background: rgba(0, 0, 0, 0.8);
-            padding: 6px 12px; 
-            border-radius: 15px; 
+            padding: 6px 12px;
+            border-radius: 15px;
             font-size: 12px;
             font-weight: 500;
             color: white;
             z-index: 5;
         }
+
         .switch-view-btn {
             position: absolute;
             bottom: 20px;
             left: 20px;
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-            border: 2px solid rgba(255,255,255,0.8);
+            border: 2px solid rgba(255, 255, 255, 0.8);
             color: white;
             padding: 12px;
             border-radius: 50%;
@@ -251,12 +303,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(52,152,219,0.4);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
         }
+
         .switch-view-btn:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(52,152,219,0.6);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
         }
+
         .switch-view-btn:hover {
             background: #2980b9;
         }
@@ -265,7 +319,7 @@
         .status-bar {
             text-align: center;
             padding: 10px 15px;
-            background: rgba(0,0,0,0.05);
+            background: rgba(0, 0, 0, 0.05);
             font-size: 11px;
             color: #7f8c8d;
             font-weight: 500;
@@ -274,147 +328,201 @@
             align-items: center;
             justify-content: center;
         }
-        .chat-container { 
+
+        .chat-container {
             background: transparent;
             flex: 1;
-            overflow-y: auto; 
-            padding: 20px; 
+            overflow-y: auto;
+            padding: 20px;
         }
+
         .chat-container::-webkit-scrollbar {
             width: 4px;
         }
+
         .chat-container::-webkit-scrollbar-track {
             background: #f8f9fa;
         }
+
         .chat-container::-webkit-scrollbar-thumb {
             background: #bdc3c7;
             border-radius: 2px;
         }
-        .message { 
-            margin-bottom: 15px; 
-            padding: 15px 20px; 
-            border-radius: 25px; 
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 25px;
             max-width: 85%;
             word-wrap: break-word;
             transition: all 0.3s ease;
             animation: messageSlide 0.3s ease;
             font-size: 15px;
         }
+
         @keyframes messageSlide {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .user { 
+
+        .user {
             background: #3498db;
-            color: white; 
+            color: white;
             margin-left: auto;
         }
-        .ai { 
+
+        .ai {
             background: #ecf0f1;
             color: #2c3e50;
             border: 1px solid #bdc3c7;
         }
-        .controls { 
-            display: flex; 
-            gap: 8px; 
+
+        .controls {
+            display: flex;
+            gap: 8px;
             align-items: center;
             background: #f8f9fa;
             padding: 12px 15px;
             border-top: 1px solid #e1e8ed;
         }
-        .controls input[type="text"] { 
-            flex: 1; 
-            padding: 10px 14px; 
-            border-radius: 18px; 
+
+        .controls input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 18px;
             border: 1px solid #e1e8ed;
             background: #fff;
             color: #2c3e50;
             font-size: 13px;
             transition: all 0.3s ease;
         }
+
         .controls input[type="text"]:focus {
             outline: none;
             border-color: #3498db;
-            box-shadow: 0 0 5px rgba(52,152,219,0.2);
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.2);
         }
+
         .controls input[type="text"]::placeholder {
             color: #95a5a6;
         }
+
         input[type="text"]:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
         }
-        button { 
-            padding: 10px 16px; 
-            border-radius: 18px; 
-            border: none; 
+
+        button {
+            padding: 10px 16px;
+            border-radius: 18px;
+            border: none;
             background: #3498db;
-            color: white; 
+            color: white;
             cursor: pointer;
             font-weight: 600;
             font-size: 13px;
             transition: all 0.3s ease;
             white-space: nowrap;
         }
+
         button:hover {
             background: #2980b9;
         }
+
         .end-btn {
             background: #e74c3c;
         }
+
         .end-btn:hover {
             background: #c0392b;
         }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+
         .btn-secondary {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
         @keyframes pulse {
-            0% { box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
-            50% { box-shadow: 0 8px 25px rgba(52, 152, 219, 0.6); }
-            100% { box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+            0% {
+                box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 8px 25px rgba(52, 152, 219, 0.6);
+            }
+
+            100% {
+                box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            }
         }
+
         .speaking {
             animation: pulse 1.5s infinite;
         }
 
         @media (max-width: 768px) {
-            .container { padding: 10px; }
+            .container {
+                padding: 10px;
+            }
+
             .session-layout {
                 flex-direction: column;
                 height: 80vh;
             }
-            .camera-section, .chat-section {
+
+            .camera-section,
+            .chat-section {
                 width: 100%;
             }
+
             .camera-section {
                 height: 40vh;
             }
+
             .video-call-container {
                 height: calc(40vh - 40px);
             }
-            .pip-video { width: 60px; height: 75px; }
-            .ai-avatar { width: 60px; height: 60px; font-size: 25px; }
+
+            .pip-video {
+                width: 60px;
+                height: 75px;
+            }
+
+            .ai-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 25px;
+            }
         }
+
         @media (max-width: 480px) {
-            .controls { 
+            .controls {
                 flex-wrap: wrap;
                 gap: 8px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h1>AI Session Platform</h1>
             <p>Interactive AI conversations with real-time voice</p>
         </div>
-        
+
         <div id="sessionSetup" class="session-setup">
             <div class="setup-form">
                 <input type="text" id="sessionTitle" placeholder="Session Title">
@@ -422,7 +530,7 @@
             </div>
             <button onclick="startAISession()" class="start-btn">🚀 Start Session</button>
         </div>
-        
+
         <div id="sessionActive" style="display: none;">
             <div class="session-layout">
                 <!-- Left Side - Camera -->
@@ -432,27 +540,28 @@
                             <div class="ai-main-view" id="aiMainView">
                                 <div class="ai-avatar" id="mainAiAvatar">🤖</div>
                             </div>
-                            <video id="userMainView" class="user-main-view" autoplay muted style="display: none;"></video>
+                            <video id="userMainView" class="user-main-view" autoplay muted
+                                style="display: none;"></video>
                             <div class="video-label" id="mainLabel">AI Assistant</div>
                         </div>
-                        
+
                         <div class="pip-video" id="pipVideo" onclick="switchView()">
                             <video id="userPipView" class="pip-user-video" autoplay muted></video>
                             <div class="pip-ai-view" id="aiPipView" style="display: none;">
                                 <div class="pip-ai-avatar">🤖</div>
                             </div>
                         </div>
-                        
+
                         <button class="switch-view-btn" onclick="switchView()" title="Switch View">⇄</button>
                     </div>
-                    
+
                     <div class="status-bar" id="voiceStatus">🔇 Voice Ready</div>
                 </div>
-                
+
                 <!-- Right Side - Chat -->
                 <div class="chat-section">
                     <div class="chat-container" id="chatContainer"></div>
-                    
+
                     <div class="controls">
                         <input type="text" id="messageInput" placeholder="Type message...">
                         <button onclick="sendMessage()">Send</button>
@@ -465,4 +574,5 @@
 
     <script src="/static/app.js"></script>
 </body>
+
 </html>
