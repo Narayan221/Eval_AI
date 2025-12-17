@@ -1,7 +1,8 @@
+
 import json
 from typing import Dict, Optional
 
-class WebRTCHandler:
+class WebRTCService:
     def __init__(self):
         self.peer_connections: Dict[str, dict] = {}
         

@@ -1,14 +1,13 @@
+
 import asyncio
 import os
 from typing import Dict, List
 from groq import AsyncGroq
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
-
-class AISessionManager:
+class ChatService:
     def __init__(self):
-        self.client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         self.session_title = ""
         self.session_description = ""
         self.conversation_history: List[Dict] = []
