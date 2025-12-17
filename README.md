@@ -1,54 +1,51 @@
-# Live AI Session
+# Automated Media Analysis Queue
 
-A real-time AI-led session platform with WebRTC video support and intelligent conversation handling.
+A conceptual automated system that fetches media URLs from an external API, downloads them, and performs AI analysis (Human Activity Recognition + Audio Transcription).
 
-## Features
+## 🚀 How to Run
 
-- **AI Session Leadership**: AI guides conversations based on session title
-- **WebRTC Video**: Real-time video communication
-- **Gitter vs Bargain**: Intelligent conversation mode detection
-- **Real-time Chat**: WebSocket-based instant messaging
-- **Simple UI**: Clean web interface
+### 1. Configuration
+Open `app/core/config.py` and set the following:
+```python
+# The API URL that returns your media links (JSON)
+STARTUP_JOB_URL = "https://your-nextjs-app.com/api/get-session-data"
 
-## Quick Start
+# How often to check/re-run (in minutes)
+JOB_INTERVAL_MINUTES = 5
+```
 
-1. **Setup Environment**:
-   ```bash
-   python setup.py
-   ```
+### 2. Start the Server
+Run the application. It will automatically start the background polling loop.
+```bash
+uvicorn app.main:app --reload
+```
+Check the terminal console for analysis logs.
 
-2. **Configure**:
-   - Update `.env` with your OpenAI API key
-   - Modify session title and AI personality
+---
 
-3. **Run**:
-   ```bash
-   # Activate virtual environment
-   venv\Scripts\activate  # Windows
-   # source venv/bin/activate  # Unix/Linux/Mac
-   
-   # Start server
-   python -m app.main
-   ```
+## 📂 Active System Files
 
-4. **Access**: Open http://localhost:8000
+These are the files currently powering the automation queue:
 
-## Architecture
+| File Path | Purpose |
+| :--- | :--- |
+| **`app/main.py`** | Entry point. Starts the background polling loop on boot. |
+| **`app/core/config.py`** | Configuration (Target URL, Interval, API Keys). |
+| **`app/services/analysis_job_service.py`** | The "Manager". Fetches API, downloads files, and orchestrates analysis. |
+| **`app/services/activity_service.py`** | **Video AI**: Runs YOLOv8 for body pose and activity scoring. |
+| **`app/services/transcription_service.py`** | **Audio AI**: Runs Faster-Whisper for text transcription. |
+| **`app/routers/analysis.py`** | **Manual Trigger**: Endpoint `POST /analysis/job` to force-run a specific URL. |
 
-- **FastAPI Backend**: Handles WebSocket and HTTP requests
-- **AI Session Manager**: Manages conversation flow and context
-- **WebRTC Handler**: Manages video/audio streams
-- **Real-time Communication**: WebSocket for instant interaction
+---
 
-## Conversation Modes
+## ⚙️ How It Works (The Loop)
 
-- **Gitter**: Casual conversation, engaging and exploratory
-- **Bargain**: Decision-making, negotiation, clear options
+1.  **Fetch**: Server calls `STARTUP_JOB_URL`.
+2.  **Extract**: Looks for `media_url` or `s3_url` in the JSON response.
+3.  **Download**: Saves the file temporarily.
+4.  **Analyze**:
+    *   **Video**: Activity Recognition (YOLO) + Transcription.
+    *   **Audio**: Transcription Only.
+5.  **Sleep**: Waits `JOB_INTERVAL_MINUTES` before repeating.
 
-## Next Steps
-
-1. Integrate actual WebRTC library (aiortc)
-2. Add voice synthesis for AI responses
-3. Implement session recording
-4. Add user authentication
-5. Scale with Redis for multiple sessions
+> **Note**: Legacy features (Live Chat, UI, WebRTC) are currently disabled in `main.py`.

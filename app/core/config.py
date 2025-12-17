@@ -13,4 +13,8 @@ class Settings:
     SPEECHT5_TTS_PATH = "models/speecht5_tts"
     SPEECHT5_VOCODER_PATH = "models/speecht5_hifigan"
 
+    # Startup Analysis Configuration
+    STARTUP_JOB_URL: str = "" # Paste your Next.js API URL here to run on startup
+    JOB_INTERVAL_MINUTES: int = 5 # How often (in minutes) to re-check the URL
+
 settings = Settings()
