@@ -3,7 +3,7 @@ let localStream;
 let peerConnection;
 let recognition;
 let isListening = false;
-let speechSynthesis = window.speechSynthesis;
+let currentAudio = null;
 let isAIMainView = true; // true = AI main, false = User main
 
 // WebSocket connection
@@ -17,8 +17,8 @@ function connectWebSocket() {
         if (data.type === 'ai_response') {
             addMessage('AI', data.content, 'ai');
 
-            if (data.speak) {
-                speakText(data.content);
+            if (data.audio) {
+                playAudio(data.audio);
             }
         } else if (data.type === 'webrtc_answer') {
             handleWebRTCAnswer(data.sdp);
@@ -36,33 +36,39 @@ function connectWebSocket() {
     };
 }
 
-// Speech synthesis with auto-restart listening
-function speakText(text) {
-    // Stop any ongoing speech
-    speechSynthesis.cancel();
+// Play server-side generated audio
+function playAudio(audioBase64) {
+    if (!audioBase64) return;
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 0.8;
+    // Stop previous
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
 
-    utterance.onstart = function () {
+    // Create audio from base64
+    currentAudio = new Audio("data:audio/wav;base64," + audioBase64);
+
+    // Handle animation
+    currentAudio.onplay = function () {
         updateVoiceStatus('🔊 AI Speaking...');
         animateAIAvatar(true);
     };
 
-    utterance.onend = function () {
+    currentAudio.onend = function () {
         updateVoiceStatus('🎤 Always Listening (can interrupt)');
         animateAIAvatar(false);
+        currentAudio = null;
     };
 
-    utterance.onerror = function (event) {
-        console.log('Speech synthesis error:', event.error);
-        updateVoiceStatus('❌ Speech error');
-        setTimeout(() => startListening(), 1000);
+    currentAudio.onerror = function (e) {
+        console.error("Audio playback error", e);
+        updateVoiceStatus('❌ Audio Error');
+        currentAudio = null;
     };
 
-    speechSynthesis.speak(utterance);
+    // Play
+    currentAudio.play().catch(e => console.error("Auto-play blocked", e));
 }
 
 // ChatGPT-like voice recognition with better reliability
@@ -93,8 +99,10 @@ function initSpeechRecognition() {
             transcript = transcript.trim();
             if (transcript.length > 0) {
                 // Stop AI if it's currently speaking (interruption)
-                if (speechSynthesis.speaking) {
-                    speechSynthesis.cancel();
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                    animateAIAvatar(false);
                     updateVoiceStatus('🛑 Interrupted AI');
                 }
 
@@ -120,7 +128,7 @@ function initSpeechRecognition() {
             // Auto-retry on certain errors
             if (event.error === 'no-speech' || event.error === 'audio-capture') {
                 setTimeout(() => {
-                    if (!speechSynthesis.speaking) {
+                    if (!currentAudio) {
                         startListening();
                     }
                 }, 2000);
@@ -232,7 +240,7 @@ function startListening() {
 
         // Retry after delay
         setTimeout(() => {
-            if (!isListening && !speechSynthesis.speaking) {
+            if (!isListening && !currentAudio) {
                 startListening();
             }
         }, 2000);
@@ -306,8 +314,9 @@ function endSession() {
     stopVoiceRecognition();
 
     // Stop speech synthesis
-    if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
     }
 
     // Close WebSocket

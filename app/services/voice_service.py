@@ -94,4 +94,40 @@ class VoiceService:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, generate_speech)
         
-        return output_path
+    async def text_to_speech_base64(self, text: str) -> str:
+        """Convert text to speech and return base64 encoded string"""
+        import base64
+        
+        clean_text = self.clean_text_for_speech(text)
+        
+        def generate_speech_b64():
+            try:
+                inputs = self.processor(text=clean_text, return_tensors="pt").to(self.device)
+                
+                with torch.no_grad():
+                    speech = self.model.generate_speech(
+                        inputs["input_ids"], 
+                        self.speaker_embeddings, 
+                        vocoder=self.vocoder
+                    )
+                
+                # Convert to numpy
+                speech_np = speech.cpu().numpy()
+                
+                # Save to in-memory buffer
+                buffer = io.BytesIO()
+                sf.write(buffer, speech_np, samplerate=16000, format='WAV')
+                buffer.seek(0)
+                
+                # Encode to base64
+                b64_audio = base64.b64encode(buffer.read()).decode("utf-8")
+                return b64_audio
+                    
+            except Exception as e:
+                print(f"SpeechT5 TTS generation failed: {e}")
+                return None
+        
+        loop = asyncio.get_event_loop()
+        b64_audio = await loop.run_in_executor(None, generate_speech_b64)
+        
+        return b64_audio
